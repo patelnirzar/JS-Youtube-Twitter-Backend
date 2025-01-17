@@ -1,0 +1,16 @@
+*.env
+.env
+.env.*
+/.vscode
+/.vscode-test
+/node_modules
+/node_modules_container
+./dist
+**/.git
+**/.svn
+**/.hg
+**/node_modules
+**/.git
+**/.svn
+**/.hg
+*.md
