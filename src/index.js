@@ -1,9 +1,23 @@
-import dotenv from "dotenv"
-import connectDB from './db/index.js';
+import dotenv from "dotenv";
+import connectDB from "./db/index.js";
+import app from "./app.js";
 
-dotenv.config()
+dotenv.config();
 
 connectDB()
+  .then(() => {
+    app.on("error", (error) => {
+      console.log(error);
+      throw error;
+    });
+
+    app.listen(process.env.PORT || 8000, () => {
+      console.log(`App is running on https://localhost:${process.env.PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.log(`MONGODB connection error ${err}`);
+  });
 
 
 
@@ -38,7 +52,14 @@ connectDB()
 
 
 
-// import express from 'express'   
+
+
+
+
+
+
+
+// import express from 'express'
 // const app = express()
 
 // ; (async() => {
@@ -53,7 +74,7 @@ connectDB()
 //             console.log(
 //               `App is running on http://localhost:${process.env.PORT}`
 //             );
-            
+
 //         })
 //     } catch (error) {
 //         console.error("ERROR:", error);
