@@ -8,7 +8,6 @@ import ApiResponse from "../utils/ApiResponse.js";
 const registerUser = asyncHandler(async (req, res) => {
     //get data from frontend
     const { userName, email, fullName, password } = req.body;
-    console.log(userName, email, password)
 
     //validation - not empty
     if (userName === "" || email === "" || fullName === "" || password === "") {
@@ -16,19 +15,23 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     //check if user already exists
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or:[{userName},{email}]
     })                                      // using $or oparated finding that any of one field exsits in DB or not
     
     if (existedUser) {
-        throw new ApiError(409, "User with Usename or email exists");
+        return res.status(409).json(
+            new ApiResponse(409, null, "User with Username or email exists")
+        )
+        //throw new ApiError(409, "User with Username or email exists");
     }
 
     //check for images,  avatar is required
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    const coverImageLocalPath = "" ?? req?.files?.coverImage[0]?.path; //?? is the nullish coalescing operator. It returns the right-hand operand if the left-hand operand is null or undefined, otherwise it returns the left-hand operand.
 
     if (!avatarLocalPath) {
+        console.log(avatarLocalPath)
         throw new ApiError(400, "Avatar are reqired");
     }
 
