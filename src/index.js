@@ -12,7 +12,7 @@ connectDB()
     });
 
     app.listen(process.env.PORT || 8000, () => {
-      console.log(`App is running on https://localhost:${process.env.PORT}`);
+      console.log(`App is running on http://localhost:${process.env.PORT}`);
     });
   })
   .catch((err) => {
