@@ -15,8 +15,7 @@
   "author": "Nirzar Patel",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^3.1.9",
-    "prettier": "^3.4.2"
+    "nodemon": "^3.1.9"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
