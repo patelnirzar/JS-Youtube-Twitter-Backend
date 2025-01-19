@@ -1,9 +1,24 @@
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { User } from "../models/user.model.js"
+import { User } from "../models/user.model.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
 
+const generateAccessAndRefreshToken = async (userId) => {
+    try {
+        const user = await User.findById(userId);
+        const ACCESS_TOKEN = user.generateAccessToken();
+        const REFRESH_TOKEN = user.generateRefreshToken();
+
+        user.refreshToken = REFRESH_TOKEN;
+        await user.save({ validateBeforeSave: false })
+        
+        return {ACCESS_TOKEN,REFRESH_TOKEN}
+
+    } catch (error) {
+        throw new ApiError(500,"Somehting went wrong while generating tokens")
+    }
+}
 
 const registerUser = asyncHandler(async (req, res) => {
     //get data from frontend
@@ -28,7 +43,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     //check for images,  avatar is required
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = "" ?? req?.files?.coverImage[0]?.path; //?? is the nullish coalescing operator. It returns the right-hand operand if the left-hand operand is null or undefined, otherwise it returns the left-hand operand.
+    const coverImageLocalPath = req?.files?.coverImage[0]?.path ?? ""; //?? is the nullish coalescing operator. It returns the right-hand operand if the left-hand operand is null or undefined, otherwise it returns the left-hand operand.
 
     if (!avatarLocalPath) {
         console.log(avatarLocalPath)
@@ -71,4 +86,88 @@ const registerUser = asyncHandler(async (req, res) => {
     )
 })
 
-export { registerUser }
+const loginUser = asyncHandler( async (req,res) => {
+    //get req.body
+    const { userName, email, password } = req.body;
+    
+    //username or email base login
+    if (!(userName || email) && !password) {
+        throw new ApiError(400, "Username/Email or Password is required");
+    }
+
+    //find user
+    const user = await User.findOne({
+        $or:[{userName},{email}]
+    })
+
+    if (!user) {
+        throw new ApiError(400, "User not found, Please register first!!");
+    }
+
+    //pwd check
+    const isPasswordValid = await user.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Password is not valid");
+    }
+
+    //access and refresh token generate
+    const { ACCESS_TOKEN, REFRESH_TOKEN } = await generateAccessAndRefreshToken(user._id);
+    
+    //send token in secure cookie
+    const loggedInUser = await User.findById(user._id).
+        select("-password -refreshToken")
+    
+    const options = {
+        httpOnly: true,
+        secure:true
+    }
+
+    return res
+        .status(200)
+        .cookie("accessToken", ACCESS_TOKEN, options)
+        .cookie("refreshToken", REFRESH_TOKEN, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: loggedInUser, ACCESS_TOKEN, REFRESH_TOKEN
+                },
+                "User logged In successfully"
+            )
+        )
+})
+
+const logoutUser = asyncHandler(async (req,res) => {
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                refreshToken: undefined
+            }
+        },
+        {
+            new:true                        //by seting new:true it'll set new return in obj
+        }
+    )
+    
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+ 
+    //clear cookies
+    return res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(
+            new ApiResponse(
+                200,
+                {},
+                "User logged out!!"
+            )
+        )
+})
+
+export { registerUser, loginUser, logoutUser }
