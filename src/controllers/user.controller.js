@@ -144,8 +144,8 @@ const logoutUser = asyncHandler(async (req,res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1 //this romove filed from DB
             }
         },
         {
@@ -176,7 +176,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 
    try {
-     const decodedToken = jwt.verify(incomingRefreshToken, process.env.ACCESS_TOKEN_SECRET);
+       const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
  
      // @ts-ignore
      const user = await User.findById(decodedToken?._id);
